@@ -1,0 +1,102 @@
+CREATE DATABASE SLD;
+USE SLD;
+
+
+CREATE TABLE `Sample_Longlist_Data` (
+	`Date Added` VARCHAR(9) NOT NULL, 
+	category VARCHAR(6) NOT NULL, 
+	sellerlink VARCHAR(11) NOT NULL, 
+	`sellerlink-url` VARCHAR(16) NOT NULL, 
+	`sellerstorefront-url` VARCHAR(26) NOT NULL, 
+	sellerproductcount VARCHAR(28), 
+	sellerratings VARCHAR(50), 
+	sellerdetails VARCHAR(689), 
+	`seller business name` VARCHAR(81), 
+	businessaddress VARCHAR(162), 
+	`Count of seller brands` DECIMAL(38, 0) NOT NULL, 
+	`Max %% of negative seller ratings - last 30 days` DECIMAL(38, 0) NOT NULL, 
+	`Max %% of negative seller ratings - last 90 days` DECIMAL(38, 0) NOT NULL, 
+	`Max %% of negative seller ratings - last 12 months` DECIMAL(38, 0) NOT NULL, 
+	`Hero Product 1 #ratings` DECIMAL(38, 0) NOT NULL, 
+	`Hero Product 2 #ratings` DECIMAL(38, 0) NOT NULL, 
+	`Sample brand name` VARCHAR(45), 
+	`Sample Brand URL` VARCHAR(181) NOT NULL
+);
+
+SELECT * FROM Sample_Longlist_Data;
+
+
+
+LOAD DATA INFILE
+'E:/Sample_Longlist_Data.csv'
+INTO TABLE Sample_Longlist_Data
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+
+SELECT category,sellerproductcount, sellerratings FROM Sample_Longlist_Data;
+
+
+SELECT 
+  SUBSTRING_INDEX(
+    SUBSTRING_INDEX(sellerproductcount, ' over ', -1), 
+    ' results', 
+    1
+  ) AS total_products
+FROM 
+ Sample_Longlist_Data;
+ 
+ SELECT 
+  SUBSTRING_INDEX(sellerratings, '%', 1) AS percentage_positive,
+  SUBSTRING_INDEX(
+    SUBSTRING_INDEX(sellerratings, '(', -1),
+    ' ratings',
+    1
+  ) AS count_ratings
+FROM 
+   Sample_Longlist_Data;
+   
+SELECT 
+  sellerdetails,
+  REGEXP_SUBSTR(sellerdetails, '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}') AS email,
+  REGEXP_SUBSTR(sellerdetails, '[(]?[0-9]{3}[)]?[-\s]?[0-9]{3}[-\s]?[0-9]{4}') AS phone
+FROM 
+  Sample_Longlist_Data;
+  
+  SELECT 
+  businessaddress,
+  CASE 
+    WHEN businessaddress LIKE '%USA%' THEN 'US' 
+    WHEN businessaddress LIKE '%DE%' THEN 'DE' 
+    WHEN businessaddress LIKE '%CN%' THEN 'CN' 
+    ELSE 'Other' 
+  END AS registration_country
+FROM 
+  Sample_Longlist_Data;
+  
+  SELECT 
+  hero_product_1_ratings,hero_product_2_ratings
+  [Hero Product 1 #ratings] AS hero_product_1_ratings,
+  [Hero Product 2 #ratings] AS hero_product_2_ratings
+FROM 
+  Sample_Longlist_Data;
+  
+select * from Sample_Longlist_Data;
+
+
+
+CREATE TABLE parsed_table AS
+SELECT 
+  CAST(SUBSTRING(sellerproductcount, CHARINDEX('of over ', sellerproductcount) + 8, LEN(sellerproductcount) - CHARINDEX('of over ', sellerproductcount) - CHARINDEX('results', REVERSE(sellerproductcount))) AS INT) AS product_count,
+  CAST(SUBSTRING(sellerratings, CHARINDEX('(', sellerratings) + 1, CHARINDEX(' ratings', sellerratings) - CHARINDEX('(', sellerratings) - 1) AS INT) AS positive_ratings_count,
+  CASE 
+    WHEN businessaddress LIKE '%USA%' THEN 'US' 
+    WHEN businessaddress LIKE '%DE%' THEN 'DE' 
+    WHEN businessaddress LIKE '%CN%' THEN 'CN' 
+    ELSE 'Other' 
+  END AS registration_country,
+  CAST([Hero Product 1 #ratings] AS INT) AS hero_product_1_ratings,
+  CAST([Hero Product 2 #ratings] AS INT) AS hero_product_2_ratings
+FROM 
+  Sample_Longlist_Data;
